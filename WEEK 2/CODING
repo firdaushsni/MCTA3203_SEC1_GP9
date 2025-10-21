@@ -1,0 +1,81 @@
+// Define segment pins (D0–D6)
+const int segmentA = 4;
+const int segmentB = 7;
+const int segmentC = 5;
+const int segmentD = 3;
+const int segmentE = 2;
+const int segmentF = 6;
+const int segmentG = 11;
+
+// Pushbutton pins
+const int buttonIncrement = 9;
+const int buttonReset = 10;
+
+// Variable to store count value (0–9)
+int count = 0;
+
+// Digit patterns for 0–9
+const int digits[10][7] = {
+  {1,1,1,1,1,1,0}, // 0
+  {0,1,1,0,0,0,0}, // 1
+  {1,1,0,1,1,0,1}, // 2
+  {1,1,1,1,0,0,1}, // 3
+  {0,1,1,0,0,1,1}, // 4
+  {1,0,1,1,0,1,1}, // 5
+  {1,0,1,1,1,1,1}, // 6
+  {1,1,1,0,0,0,0}, // 7
+  {1,1,1,1,1,1,1}, // 8
+  {1,1,1,1,0,1,1}  // 9
+};
+
+const int segments[7] = {segmentA, segmentB, segmentC, segmentD, segmentE, segmentF, segmentG};
+
+// Variables to store previous button states
+bool lastIncState = HIGH;
+bool lastResetState = HIGH;
+
+void setup() {
+  for (int i = 0; i < 7; i++) pinMode(segments[i], OUTPUT);
+  
+  pinMode(buttonIncrement, INPUT_PULLUP);
+  pinMode(buttonReset, INPUT_PULLUP);
+  
+  Serial.begin(9600);
+  displayDigit(count);
+}
+
+void loop() {
+  bool currentIncState = digitalRead(buttonIncrement);
+  bool currentResetState = digitalRead(buttonReset);
+
+  // Detect when button is just pressed (transition from HIGH to LOW)
+  if (lastIncState == HIGH && currentIncState == LOW) {
+    delay(50); // debounce delay
+    if (digitalRead(buttonIncrement) == LOW) {
+      count++;
+      if (count > 9) count = 0;
+      displayDigit(count);
+      Serial.print("Count: ");
+      Serial.println(count);
+    }
+  }
+
+  if (lastResetState == HIGH && currentResetState == LOW) {
+    delay(50);
+    if (digitalRead(buttonReset) == LOW) {
+      count = 0;
+      displayDigit(count);
+      Serial.println("Count reset to 0");
+    }
+  }
+
+  // update states
+  lastIncState = currentIncState;
+  lastResetState = currentResetState;
+}
+
+void displayDigit(int num) {
+  for (int i = 0; i < 7; i++) {
+    digitalWrite(segments[i], digits[num][i] ? HIGH : LOW);
+  }
+}
