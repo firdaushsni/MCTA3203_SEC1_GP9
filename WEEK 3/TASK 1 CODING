@@ -1,0 +1,27 @@
+TASK 1
+
+import serial
+import time
+# Replace 'COM4' with your Arduino's serial port
+ser = serial.Serial('COM4', 9600)
+time.sleep(2)  # wait for serial connection to initialize
+
+try:
+    while True:
+        pot_value = ser.readline().decode().strip()
+
+        if pot_value.isdigit():  # check if the input is a valid number
+            pot_value = int(pot_value)
+            print("Potentiometer Value:", pot_value)
+
+            # Check if potentiometer value exceeds half of its range (0–1023)
+            if pot_value > 512:
+                ser.write(b'ON\n')   # send ON command to Arduino
+                print("LED: ON")
+            else:
+                ser.write(b'OFF\n')  # send OFF command to Arduino
+                print("LED: OFF")
+
+except KeyboardInterrupt:
+    ser.close()
+    print("Serial connection closed.")
