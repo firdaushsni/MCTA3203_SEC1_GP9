@@ -1,0 +1,92 @@
+TASK 2
+
+ARDUINO 
+
+#include <Servo.h>
+
+Servo myServo;
+
+const int potPin = A0;   // Potentiometer pin
+const int ledPin = 9;    // LED pin
+const int servoPin = 6;  // Servo pin
+
+int potValue = 0;
+int angle = 0;
+
+void setup() {
+  Serial.begin(9600);
+  myServo.attach(servoPin);
+  pinMode(ledPin, OUTPUT);
+
+  Serial.println("System Ready. Press 's' from Python to start control.");
+}
+
+void loop() {
+  // Check if Python sent a stop/start command
+  if (Serial.available()) {
+    char cmd = Serial.read();
+    if (cmd == 'q') {
+      Serial.println("Program halted by Python.");
+      while (true);  // Stop program
+    }
+  }
+
+  // Read potentiometer (0 - 1023)
+  potValue = analogRead(potPin);
+
+  // Map to servo angle (0 - 180)
+  angle = map(potValue, 0, 1023, 0, 180);
+  myServo.write(angle);
+
+  // Control LED brightness based on potentiometer
+  int ledBrightness = map(potValue, 0, 1023, 0, 255);
+  analogWrite(ledPin, ledBrightness);
+
+  // Send potentiometer value to Python
+  Serial.println(potValue);
+
+  delay(50); // Small delay for stability
+}
+
+
+PYCHARM
+
+import serial
+import matplotlib.pyplot as plt
+
+# --- Set up serial communication ---
+ser = serial.Serial('COM4', 9600)  # Change COM port if needed
+
+plt.ion()  # Enable interactive mode
+fig, ax = plt.subplots()
+x_vals, y_vals = [], []
+
+print("Reading potentiometer values... Press Ctrl+C to stop.")
+
+try:
+    while True:
+        pot_value = ser.readline().decode().strip()  # Read data
+        if pot_value.isdigit():  # Validate input
+            pot_value = int(pot_value)
+            print("Potentiometer Value:", pot_value)
+
+            # Append new data
+            x_vals.append(len(x_vals))
+            y_vals.append(pot_value)
+
+            # Update plot
+            ax.clear()
+            ax.plot(x_vals, y_vals, color='b', linewidth=2)
+            ax.set_title("Real-Time Potentiometer Reading")
+            ax.set_xlabel("Sample")
+            ax.set_ylabel("Value (0–1023)")
+            plt.pause(0.1)
+
+except KeyboardInterrupt:
+    # Gracefully stop the Arduino and close everything
+    print("\nStopping...")
+    ser.write(b'q')  # Send stop command to Arduino
+    ser.close()
+    plt.ioff()
+    plt.show()
+    print("Serial connection closed.")
